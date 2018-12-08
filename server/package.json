@@ -1,0 +1,28 @@
+{
+  "name": "airsense.server",
+  "version": "0.0.1",
+  "description": "simple nodejs server to retrieve data from airsense devices",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dariosalvi78/airsense.git"
+  },
+  "keywords": [
+    "nodejs",
+    "air",
+    "quality"
+  ],
+  "author": "Dario Salvi",
+  "license": "GPL-3.0-or-later",
+  "bugs": {
+    "url": "https://github.com/dariosalvi78/airsense/issues"
+  },
+  "homepage": "https://github.com/dariosalvi78/airsense#readme",
+  "dependencies": {
+    "body-parser": "^1.18.3",
+    "express": "^4.16.4"
+  }
+}
