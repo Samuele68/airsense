@@ -6,7 +6,7 @@ const fs = require('fs')
 
 const app = express()
 app.use(bodyParser.text())
-const port = 9000
+const port = 80
 
 const statusFile = 'status.txt'
 const dataFile = 'data.csv'
@@ -15,6 +15,7 @@ app.get('/amialive', (req, res) => res.send('I\'m alive ! I\'m alive!'))
 
 app.post('/airsense/data', (req, res) => {
 	let line = req.body
+	console.log(new Date() + ' received line: ', line)
 	line = new Date().toISOString() + ' ' + line + '\n'
 	fs.appendFile(dataFile, line, function (err) {
 	  if (err) res.sendStatus(500)
@@ -31,6 +32,7 @@ app.get('/airsense/data', (req, res) => {
 
 app.post('/airsense/status', (req, res) => {
 	let line = req.body
+	console.log(new Date() + 'received line: ', line)
 	line = new Date().toISOString() + ' ' + line + '\n'
 	fs.appendFile(statusFile, line, function (err) {
 	  if (err) res.sendStatus(500)

@@ -12,18 +12,22 @@
 //you can use the AT Command(AT+IPR=9600) to set it through SerialDebug
 #define BAUDRATE  9600
 
-char http_cmd[] = "GET /media/uploads/mbed_official/hello.txt HTTP/1.0\r\n\r\n";
+char http_cmd[] = "POST /airsense/status HTTP/1.1\r\nHost: airsense.fr.openode.io\r\nConnection: close\r\nContent-Length: 27\r\nContent-Type: text/plain;charset=UTF-8\r\n\r\nRunning a test from Arduino\r\n";
 char buffer[512];
 GPRS gprs(PIN_TX, PIN_RX, BAUDRATE);
-void setup(){
+
+void setup() {
   Serial.begin(9600);
+  Serial.print("Starting sketch...\r\n");
   SIM800_PreInit();
+  
   // use DHCP
   while(!gprs.init()) {
       delay(1000);
       Serial.print("init error\r\n");
   }
-  delay(3000);    
+  delay(3000);  
+    
   // attempt DHCP
   while(!gprs.join(F("payandgo.o2.co.uk"), F("payandgo"), F("password"))) {
       Serial.println("gprs join network error");
@@ -34,10 +38,10 @@ void setup(){
   Serial.print("IP Address is ");
   Serial.println(gprs.getIPAddress());
 
-  if(!gprs.connect(TCP,"mbed.org", 80)) {
+  if(!gprs.connect(TCP, "airsense.fr.openode.io", 80)) {
       Serial.println("connect error");
   }else{
-      Serial.println("connect mbed.org success");
+      Serial.println("connect to airsense.fr.openode.io success");
   }
 
   Serial.println("waiting to fetch...");
