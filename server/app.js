@@ -10,13 +10,13 @@ const port = 80
 
 const statusFile = 'status.txt'
 const dataFile = 'data.csv'
+const alexFile = 'alex.txt'
 
-app.get('/amialive', (req, res) => res.send('I\'m alive ! I\'m alive!'))
+app.get('/', (req, res) => res.send('Hello fuckers.'))
 
 app.post('/airsense/data', (req, res) => {
 	let line = req.body
-	console.log(new Date() + ' received line: ', line)
-	line = new Date().toISOString() + ' ' + line + '\n'
+	line = new Date().toISOString() + ', ' + line + '\n'
 	fs.appendFile(dataFile, line, function (err) {
 	  if (err) res.sendStatus(500)
 	  else res.sendStatus(200)
@@ -32,8 +32,7 @@ app.get('/airsense/data', (req, res) => {
 
 app.post('/airsense/status', (req, res) => {
 	let line = req.body
-	console.log(new Date() + 'received line: ', line)
-	line = new Date().toISOString() + ' ' + line + '\n'
+	line = new Date().toISOString() + ', ' + line + '\n'
 	fs.appendFile(statusFile, line, function (err) {
 	  if (err) res.sendStatus(500)
 	  else res.sendStatus(200)
@@ -42,6 +41,22 @@ app.post('/airsense/status', (req, res) => {
 
 app.get('/airsense/status', (req, res) => {
 	fs.readFile(statusFile, function (err, data) {
+	  if (err) res.sendStatus(500)
+	  else res.type('text/plain').send(data)
+	})
+})
+
+app.post('/alex/data', (req, res) => {
+	let line = req.body
+	line = new Date().toISOString() + ', ' + line + '\n'
+	fs.appendFile(alexFile, line, function (err) {
+	  if (err) res.sendStatus(500)
+	  else res.sendStatus(200)
+	})
+})
+
+app.get('/alex/data', (req, res) => {
+	fs.readFile(alexFile, function (err, data) {
 	  if (err) res.sendStatus(500)
 	  else res.type('text/plain').send(data)
 	})
