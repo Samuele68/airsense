@@ -1,12 +1,10 @@
-#define SIM800_POWER_PIN        9
-#define SIM800_POWER_STATUS     12
-
 #define CONNECTION_TIMEOUT 30000
 
 char IPaddress[20];
-char command[512];
 char buffer[512];
-
+char command[512];
+char numbuff[5];
+  
 bool SIM800_init(void)
 {  
   Serial.println("SIM800 init...");
@@ -42,8 +40,9 @@ bool SIM800_init(void)
 bool SIM800_connectInternet(void) {
   // attempt DHCP
   while (!gprs.join(F("payandgo.o2.co.uk"), F("payandgo"), F("password"))) {
-    Serial.println("gprs join network error, retrying...");
-    delay(2000);
+    Serial.println("gprs join network error, reinitialising...");
+    gprs.powerUpDown(SIM800_POWER_PIN);
+    SIM800_init();
   }
 
   // successful DHCP
@@ -54,29 +53,32 @@ bool SIM800_connectInternet(void) {
 }
 
 bool SIM800_sendStatusLine(char* line) {
-  if (!gprs.connect(TCP, "airsense.fr.openode.io", 80)) {
-    Serial.println("cannot connect to host");
-    return false;
-  } else {
-    Serial.println("connected to host");
-  }
-  command[0] = '\0';
-  buffer[0] = '\0';
+
+//  String command = "POST /airsense/status HTTP/1.0\r\nHost: airsense.fr.openode.io\r\nConnection: close\r\nContent-Length: " +
+//  String (line.length()) + "\r\nContent-Type: text/plain;charset=UTF-8\r\n\r\n" + line + "\r\n";
   
-  int linelen = strlen(line);
-  strcat(command, "POST /airsense/status HTTP/1.0\r\nHost: airsense.fr.openode.io\r\nConnection: close\r\nContent-Length: ");
-  char numbuff[5];
-  itoa(linelen, numbuff, 10);
+  while (!gprs.connect(TCP, "airsense.fr.openode.io", 80)) {
+    Serial.println("cannot connect to host, retrying...");
+    delay(1000);
+  }
+  
+  command[0] = "\0";
+  numbuff[0] = "\0";
+  strcpy(command, "POST /airsense/status HTTP/1.1\r\nHost: airsense.fr.openode.io\r\nContent-Length: ");
+  itoa(strlen(line), numbuff, 10);
   strcat(command, numbuff);
-  strcat(command, "\r\nContent-Type: text/plain;charset=UTF-8\r\n\r\n");
+  strcat(command, "\r\nContent-Type: text/plain\r\n\r\n");
   strcat(command, line);
   strcat(command, "\r\n");
   
   Serial.print("sending: ");
   Serial.println(command);
 
-  gprs.send(command, sizeof(command) - 1);
-  
+  gprs.send(command, strlen(command));
+
+  Serial.println("sent, now fetching...");
+
+  buffer[0] = '\0';
   while (true) {
     int ret = gprs.recv(buffer, sizeof(buffer) - 1);
     if (ret <= 0) {

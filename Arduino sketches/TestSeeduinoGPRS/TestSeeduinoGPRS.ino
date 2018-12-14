@@ -4,6 +4,8 @@
 
 #define PIN_TX    8
 #define PIN_RX    7
+#define SIM800_POWER_PIN        9
+#define SIM800_POWER_STATUS     12
 
 #define BAUDRATE  9600
 
@@ -22,10 +24,16 @@ void setup() {
 
 void loop(){
 
-  int signalstrength = -1;
-  gprs.getSignalStrength(&signalstrength);
+//  int signalstrength = -1;
+//  gprs.getSignalStrength(&signalstrength);
+//  
+//  String line = String(millis()) + ", " + String(signalstrength);
+//
+//  SIM800_sendStatusLine(line.c_str());
 
-  SIM800_sendStatusLine("just an Arduino test");
+  unsigned long unixtime = NTPUnixTimestamp();
+
+  Serial.println(unixtime);
 
   delay(5000);
 }
