@@ -54,9 +54,6 @@ bool SIM800_connectInternet(void) {
 
 bool SIM800_sendStatusLine(char* line) {
 
-//  String command = "POST /airsense/status HTTP/1.0\r\nHost: airsense.fr.openode.io\r\nConnection: close\r\nContent-Length: " +
-//  String (line.length()) + "\r\nContent-Type: text/plain;charset=UTF-8\r\n\r\n" + line + "\r\n";
-  
   while (!gprs.connect(TCP, "airsense.fr.openode.io", 80)) {
     Serial.println("cannot connect to host, retrying...");
     delay(1000);

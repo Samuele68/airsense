@@ -9,6 +9,10 @@
 
 #define BAUDRATE  9600
 
+char message[160];
+char phone[16];
+char datetime[24];
+
 GPRS gprs(PIN_TX, PIN_RX, BAUDRATE);
 
 void setup() {
@@ -36,5 +40,17 @@ void loop(){
   Serial.println(unixtime);
 
   delay(5000);
+
+  int messageIndex = gprs.isSMSunread();
+   if (messageIndex > 0) { //At least, there is one UNREAD SMS
+      gprs.readSMS(messageIndex, message, 160, phone, datetime);
+      gprs.deleteSMS(messageIndex);
+      Serial.print("From number: ");
+      Serial.println(phone);  
+      Serial.print("Datetime: ");
+      Serial.println(datetime);        
+      Serial.print("Recieved Message: ");
+      Serial.println(message);    
+   }
 }
 
