@@ -9,7 +9,6 @@ app.use(bodyParser.text())
 const port = 80
 
 const dataFile = 'public/data.csv'
-const alexFile = 'public/alex.txt'
 
 var lastData = {}
 
@@ -39,19 +38,16 @@ app.get('/airsense/status', (req, res) => {
 	res.send(lastData)
 })
 
+// The following is used for tests, to be removed
+
+const alexFile = 'public/alex.csv'
+
 app.post('/alex/data', (req, res) => {
 	let line = req.body
 	line = new Date().toISOString() + ', ' + line + '\n'
 	fs.appendFile(alexFile, line, function (err) {
 		if (err) res.sendStatus(500)
 		else res.sendStatus(200)
-	})
-})
-
-app.get('/alex/data', (req, res) => {
-	fs.readFile(alexFile, function (err, data) {
-		if (err) res.sendStatus(500)
-		else res.type('text/plain').send(data)
 	})
 })
 
