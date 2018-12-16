@@ -37,7 +37,6 @@ void loop() {
    } else Serial.println(F("no new SMS"));
   
   String line = String(millis()) + ", " + String(freeMemory());
-  Serial.println(line.c_str());
   
   SIM800_sendLine(line.c_str());
 

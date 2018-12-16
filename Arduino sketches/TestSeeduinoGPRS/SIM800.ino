@@ -1,6 +1,5 @@
 #define CONNECTION_TIMEOUT 30000
 
-char buffer[512];
 char command[512];
 char numbuff[5];
 byte retries = 0;
@@ -46,7 +45,7 @@ bool SIM800_connectInternet(void) {
   }
 
   // successful DHCP
-  Serial.print(F("connected to the Internet!"));
+  Serial.println(F("connected to the Internet!"));
   return true;
 }
 
@@ -55,8 +54,11 @@ bool SIM800_sendLine(char* line) {
   Serial.println(F("connecting to host"));
   delay(200);
   retries = 0;
-  while (!gprs.connect(TCP, F("airsense.fr.openode.io"), 80)) {
-    if (retries >= 15) return false;
+  while (!gprs.connect(TCP, "airsense.fr.openode.io", 80)) {
+    if (retries >= 5) { 
+      gprs.close();
+      return false;
+    }
     Serial.println(F("cannot connect to host, retrying..."));
     retries ++;
     delay(1000);
@@ -76,28 +78,15 @@ bool SIM800_sendLine(char* line) {
 
   retries = 0;
   while(!gprs.send(command, strlen(command))) {
-    if (retries >= 15) {
+    if (retries >= 5) {
       gprs.close();
       return false;
     }
     Serial.println(F("cannot send data, retrying..."));
   }
-
-  Serial.println(F("sent, now fetching..."));
-
-  buffer[0] = '\0';
-  while (true) {
-    int ret = gprs.recv(buffer, sizeof(buffer) - 1);
-    if (ret <= 0) {
-      Serial.println(F("fetch over..."));
-      break;
-    }
-    buffer[ret] = '\0';
-    Serial.print(F("received "));
-    Serial.print(ret);
-    Serial.print(F(" bytes: "));
-    Serial.println(buffer);
-  }
+  Serial.println(F("sent, closing connection"));
+  
+  delay(1000);
   gprs.close();
   return true;
 }
