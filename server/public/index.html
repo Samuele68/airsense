@@ -9,27 +9,43 @@
   <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
 </head>
 <body>
+  <section class="hero is-dark">
+    <div class="hero-body">
+      <div class="container">
+        <h1 class="title">
+          Airsense server
+        </h1>
+        <h2 class="subtitle">
+          Server dedicated to collecting data from the Airsense sensor
+        </h2>
+      </div>
+    </div>
+  </section>
   <section class="section">
     <div class="container">
-      <h1 class="title">
-        Airsense server
-      </h1>
-      <p class="subtitle">
-        Server dedicated to collecting data from Airsense
-      </p>
+      <div class="content">
+        <p>
+          Last data received on <span id="lastairsense"></span>
+        </p>
+        <p>
+          <a href="data.csv">Download data</a>
+        </p>
+      </div>
+    </div>
+  </section>
+  <section class="section">
+    <div class="content has-text-centered">
       <p>
-        Last data received on <span id="lastairsense"></span>
-      </p>
-      <p>
-        <a href="data.csv">Download data</a>
+        <strong>Airsense</strong> by Dario Salvi.
+        Source code is available on <a href="https://github.com/dariosalvi78/airsense">Github</a>.
       </p>
     </div>
   </section>
 </body>
 <script>
-  axios.get('/airsense/status')
-  .then(function (response) {
-    document.getElementById('lastairsense').innerHTML = new Date(response.data.timestamp).toLocaleString()
-  })
+axios.get('/airsense/status')
+.then(function (response) {
+  document.getElementById('lastairsense').innerHTML = new Date(response.data.timestamp).toLocaleString()
+})
 </script>
 </html>
