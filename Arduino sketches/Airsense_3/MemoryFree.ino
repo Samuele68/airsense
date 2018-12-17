@@ -1,3 +1,4 @@
+// from http://playground.arduino.cc/code/AvailableMemory
 extern unsigned int __heap_start;
 extern void *__brkval;
 
