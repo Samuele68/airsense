@@ -27,9 +27,14 @@ bool SIM800_init(void)
     return false;
   }
 
+  retries = 0;
   while (!gprs.init()) {
-    delay(1000);
+    if (retries >= 15) { 
+      return false;
+    }
     Serial.println(F("init error, retrying..."));
+    retries++;
+    delay(1000);
   }
   Serial.println(F("registered on net"));
 
@@ -38,8 +43,13 @@ bool SIM800_init(void)
 
 bool SIM800_connectInternet(void) {
   // attempt DHCP
+  retries = 0;
   while (!gprs.join(F("payandgo.o2.co.uk"), F("payandgo"), F("password"))) {
+    if (retries >= 15) { 
+      return false;
+    }
     Serial.println(F("gprs join network error, reinitialising..."));
+    retries++;
     gprs.powerUpDown(SIM800_POWER_PIN);
     SIM800_init();
   }
