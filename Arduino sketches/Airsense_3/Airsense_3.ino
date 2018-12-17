@@ -1,27 +1,20 @@
 /*
    AirSense_3.ino
-   Sketch used for the second prototype of AirSense
+   Sketch used for the third prototype of AirSense
 
    Hardware:
    - Seeeduino GPRS
    - Grove base shield
    - Grove barometer sensor (BME280)
-   - Grove multichannel gas sensor
    - An LED
    - A custom made board with a Mics2714
    - ADS1256 board
-   - SD card reader
 
    Connections:
    - Grove barometer and Grove multichannel gas sensors connected to I2C slots
    - LED connected between GND and pin 2
    - custom Mics2714 board connected to pin A0
-   - ADS1256 connected to pins: 8 (RST), 9 (RDY), 10 (CS), 11 (DIN), 12 (DOUT), 13 (CLK)
-   - SD card reader connected to pins: 4 (CS), 11 (MOSI), 12 (MISO), 13 (SCK)
-
-   Needed libraries:
-    - Multichannel gas sensor library (see http://wiki.seeed.cc/Grove-Multichannel_Gas_Sensor/)
-
+   - ADS1256 connected to pins: 13 (RST), 11 (RDY), 10 (CS), ICSP-4 (DIN), ICSP-1 (DOUT), ICSP-3 (CLK)
 */
 #include "Seeed_BME280.h"
 #include <GPRS_Shield_Arduino.h>
@@ -176,16 +169,20 @@ static char line[200];
 const char comma_space[] = ", ";
 
 void sendData() {
+  //timestamp, free_memory, temperature, humidity, pressure, custom_MICS, alpha1, alpha2, alphadiff, specdiff
   line[0] = "\0";
   numberbuff[0] = "\0";
   strcpy(line, ltoa(millis(), numberbuff, 10) );
   strcat(line, comma_space);
   strcat(line, itoa( freeMemory(), numberbuff, 10));
+  strcat(line, comma_space);
   strcat(line, ltoa(temperature, numberbuff, 10));
   strcat(line, comma_space);
   strcat(line, ltoa( humidity, numberbuff, 10));
   strcat(line, comma_space);
   strcat(line, dtostrf(pressure, 3, 2, numberbuff));
+  strcat(line, comma_space);
+  strcat(line, itoa(custom_MICS, numberbuff, 10));
   strcat(line, comma_space);
   strcat(line, ltoa(alpha1, numberbuff, 10));
   strcat(line, comma_space);
@@ -194,8 +191,6 @@ void sendData() {
   strcat(line, ltoa(alphadiff, numberbuff, 10));
   strcat(line, comma_space);
   strcat(line, ltoa(specdiff, numberbuff, 10));
-  strcat(s, comma_space);
-  strcat(s, itoa(custom_MICS, numbuff, 10));
     
   SIM800_sendLine(line);
 }
