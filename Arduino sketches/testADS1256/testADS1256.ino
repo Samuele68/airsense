@@ -7,8 +7,6 @@
 
 void setup() {
   Serial.begin(9600);
-  delay(5000);
-  Serial.println(F("Starting sketch..."));
 
   //start the spi-bus
   SPI.begin();
@@ -25,6 +23,7 @@ void loop() {
   Serial.print(alpha1);
   Serial.print(",");
   Serial.print(alphadiff);
+  Serial.println();
   
-  delay(500);
+  delay(150);
 }

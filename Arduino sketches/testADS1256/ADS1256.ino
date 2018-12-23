@@ -71,8 +71,6 @@ void initADS(){
   //done with settings, can close SPI transaction now
   digitalWrite(ADS_CS_PIN, HIGH); //unselect ADS
   delayMicroseconds(50);
-
-  Serial.println("ADS1256 configured");
 }
 
 long readADS(byte channel) {
