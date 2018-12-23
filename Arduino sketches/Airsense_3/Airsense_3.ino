@@ -70,7 +70,7 @@ void setup() {
 
   if (!bme280.init()) {
     Serial.println(F("Cannot init BME280!"));
-    LED(0, 200, true);
+    LED(0, 300, true);
   }
   Serial.println(F("BME280 initialised"));
   LED(1000, 100, false);
@@ -78,20 +78,20 @@ void setup() {
   //start the spi-bus
   SPI.begin();
   initADS();
-  LED(1000, 50, false);
+  LED(1000, 100, false);
 
   // start the GPRS board
   if (!SIM800_init()) {
-    LED(0, 200, true);
+    LED(0, 300, true);
   }
   LED(1000, 100, false);
   delay(3000);
   while (!SIM800_connectInternet()) {
-    LED(0, 200, true);
+    LED(0, 300, true);
   }
 
   // all OK!
-  LED(10000, 100, false);
+  LED(10000, 50, false);
 
   lastSample = -SLEEP_TIME;
 }

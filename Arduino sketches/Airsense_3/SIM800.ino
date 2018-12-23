@@ -3,9 +3,9 @@
 char command[512];
 char numbuff[5];
 byte retries = 0;
-  
+
 bool SIM800_init(void)
-{  
+{
   Serial.println(F("SIM800 init..."));
   pinMode(SIM800_POWER_STATUS, INPUT);
   delay(10);
@@ -29,7 +29,7 @@ bool SIM800_init(void)
 
   retries = 0;
   while (!gprs.init()) {
-    if (retries >= 15) { 
+    if (retries >= 15) {
       return false;
     }
     Serial.println(F("init error, retrying..."));
@@ -45,12 +45,12 @@ bool SIM800_connectInternet(void) {
   // attempt DHCP
   retries = 0;
   while (!gprs.join(F("payandgo.o2.co.uk"), F("payandgo"), F("password"))) {
-    if (retries >= 15) { 
+    if (retries >= 15) {
       return false;
     }
     Serial.println(F("gprs join network error, reinitialising..."));
     retries++;
-    gprs.powerUpDown(SIM800_POWER_PIN);
+    gprs.powerReset(SIM800_POWER_PIN);
     SIM800_init();
   }
 
@@ -65,7 +65,7 @@ bool SIM800_sendLine(char* line) {
   delay(200);
   retries = 0;
   while (!gprs.connect(TCP, "airsense.fr.openode.io", 80)) {
-    if (retries >= 5) { 
+    if (retries >= 5) {
       gprs.close();
       return false;
     }
@@ -73,7 +73,7 @@ bool SIM800_sendLine(char* line) {
     retries ++;
     delay(1000);
   }
-  
+
   command[0] = "\0";
   numbuff[0] = "\0";
   strcpy(command, "POST /airsense/data HTTP/1.1\r\nHost: airsense.fr.openode.io\r\nContent-Length: ");
@@ -82,16 +82,18 @@ bool SIM800_sendLine(char* line) {
   strcat(command, "\r\nContent-Type: text/plain\r\n\r\n");
   strcat(command, line);
   strcat(command, "\r\n");
-  
+
   Serial.println(F("sending..."));
   //Serial.println(command);
 
   retries = 0;
-  while(!gprs.send(command, strlen(command))) {
+  while (!gprs.send(command, strlen(command))) {
     if (retries >= 5) {
       gprs.close();
-      // it is possible that we lost connection to the Internet, try connecting before giving up
+      // it is possible that we lost connection to the Internet, try resetting the module and starting over
       // if we're lucky, next time it'll work
+      gprs.powerReset(SIM800_POWER_PIN);
+      SIM800_init();
       SIM800_connectInternet();
       return false;
     }
@@ -99,7 +101,7 @@ bool SIM800_sendLine(char* line) {
     retries ++;
   }
   Serial.println(F("sent, closing connection"));
-  
+
   delay(1000);
   gprs.close();
   return true;
