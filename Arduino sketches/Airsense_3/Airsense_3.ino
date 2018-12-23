@@ -116,7 +116,7 @@ void loop() {
   lastSample = millis();
 
   getTempHumPress();
-  getAlphaSPEC();
+  getAlpha();
   getCustomMICS();
   getMICS4541();
 
@@ -145,7 +145,7 @@ void getTempHumPress() {
   pressure = bme280.getPressure();
 }
 
-void getAlphaSPEC() {
+void getAlpha() {
   // get 10 measurements and average
   alpha1 = 0;
   alpha2 = 0;
