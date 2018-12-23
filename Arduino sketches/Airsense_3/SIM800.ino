@@ -83,16 +83,20 @@ bool SIM800_sendLine(char* line) {
   strcat(command, line);
   strcat(command, "\r\n");
   
-  Serial.println(F("sending:"));
-  Serial.println(command);
+  Serial.println(F("sending..."));
+  //Serial.println(command);
 
   retries = 0;
   while(!gprs.send(command, strlen(command))) {
     if (retries >= 5) {
       gprs.close();
+      // it is possible that we lost connection to the Internet, try connecting before giving up
+      // if we're lucky, next time it'll work
+      SIM800_connectInternet();
       return false;
     }
     Serial.println(F("cannot send data, retrying..."));
+    retries ++;
   }
   Serial.println(F("sent, closing connection"));
   

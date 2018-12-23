@@ -14,14 +14,10 @@
 
 #define ADS_SPISPEED 1250000
 
-#define ADS_RST_PIN    8 //ADS1256 reset pin
-#define ADS_RDY_PIN    9 //ADS1256 data ready
-#define ADS_CS_PIN    10 //ADS1256 chip select
 // 11, 12 and 13 are taken by the SPI
 
 void initADS(){
   pinMode(ADS_CS_PIN, OUTPUT);
-
   pinMode(ADS_RDY_PIN, INPUT);
   pinMode(ADS_RST_PIN, OUTPUT);
   digitalWrite(ADS_RST_PIN, LOW);
