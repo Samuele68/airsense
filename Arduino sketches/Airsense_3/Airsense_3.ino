@@ -81,12 +81,7 @@ void setup() {
   LED(1000, 100, false);
 
   // start the GPRS board
-  if (!SIM800_init()) {
-    LED(0, 300, true);
-  }
-  LED(1000, 100, false);
-  delay(3000);
-  while (!SIM800_connectInternet()) {
+  if (!SIM800_connect()) {
     LED(0, 300, true);
   }
 
