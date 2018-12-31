@@ -8,11 +8,12 @@ const app = express()
 app.use(bodyParser.text())
 const port = 80
 
-const dataFile = 'public/data.csv'
+const dataFile = 'data/data.csv'
 
 var lastData = {}
 
 app.use(express.static('public'))
+app.use(express.static('data'))
 app.get('/test', (req, res) => res.send('Hello fuckers!'))
 
 app.post('/airsense/data', (req, res) => {
@@ -40,7 +41,7 @@ app.get('/airsense/status', (req, res) => {
 
 // The following is used for tests, to be removed
 
-const alexFile = 'public/alex.csv'
+const alexFile = 'data/alex.csv'
 
 app.post('/alex/data', (req, res) => {
 	let line = req.body
