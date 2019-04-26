@@ -1,0 +1,388 @@
+---
+title: "Analysis of long term data"
+output: html_notebook
+---
+
+Analysis of the data sets using linear regression.
+See [this very nice post for an introduction with R](https://www.dataquest.io/blog/statistical-learning-for-predictive-modeling-r/).
+
+Let's first open the round 1 data.
+
+Collection of data was started on 18 / 5 / 2017
+0 ms at sensor
+16:49 at mobile phone
+15:53 at monitor time (+/- 2 minutes !)
+
+Was stopped on 24 / 5 / 2017
+516905067 ms at sensor
+16:32 at mobile phone
+
+```{r}
+round1_raw <- read.csv(file="../../round1/data/AIRSENSE.CSV", header=TRUE, sep=" ", stringsAsFactors = FALSE)
+
+start_TS <- as.POSIXct('2017-05-18 15:53:00')
+
+round1_raw$timestamp <- start_TS + floor(round1_raw$timestamp / 1000)
+
+# -1 are actually failures
+round1_raw$humidity <- ifelse(round1_raw$humidity == -1, NA, round1_raw$humidity)
+round1_raw$temperature <- ifelse(round1_raw$temperature == -1, NA, round1_raw$temperature)
+names(round1_raw)[names(round1_raw) == "rawNO2_Mics"] <- "custom_MICS"
+
+round1_ref <- read.csv(file="../../round1/data/reference.csv", header=TRUE, sep=",", stringsAsFactors = FALSE)
+names(round1_ref)[names(round1_ref) == "TimeStamp"] <- "timestamp"
+names(round1_ref)[names(round1_ref) == "NO2CNC1.AVG.PPB."] <- "NO2"
+names(round1_ref)[names(round1_ref) == "NOXCNC1.AVG.PPB."] <- "NOX"
+names(round1_ref)[names(round1_ref) == "NOCNC1.AVG.PPB."] <- "NO"
+
+round1_ref$timestamp <- as.POSIXct(round1_ref$timestamp, format='%m/%d/%Y %H:%M:%S')
+
+rm(start_TS)
+```
+
+Now we need to make the timestamps match
+
+```{r}
+first_useful_ts <- max(round1_raw$timestamp[1], round1_ref$timestamp[1])
+last_useful_ts <- min(round1_raw$timestamp[nrow(round1_raw)], round1_ref$timestamp[nrow(round1_ref)])
+
+# cut the data between these two
+
+round1_raw <- round1_raw[which(round1_raw$timestamp <= last_useful_ts & round1_raw$timestamp >= first_useful_ts ), ]
+
+round1_ref <- round1_ref[which(round1_ref$timestamp <= last_useful_ts & round1_ref$timestamp >= first_useful_ts ), ]
+
+# now the let's match the two data sets, we'll interpolate the raw data to match the reference
+
+interpolate <- function (raw, ref, colname) {
+  ip <- approx(raw$timestamp,raw[[colname]], xout = ref$timestamp, rule = 2, method = "linear", ties = mean)
+  temp <- data.frame(timestamp = ip$x, col = ip$y)
+  names(temp)[names(temp) == 'col'] <- colname
+  return(temp)
+}
+
+temp_raw <- data.frame()
+
+for (name in names(round1_raw)) {
+  if (name != 'timestamp') {
+    if (nrow(temp_raw) == 0) {
+      temp_raw = interpolate(round1_raw, round1_ref, name)
+    } else {
+      t = interpolate(round1_raw, round1_ref, name)
+      temp_raw[[name]] = t[[name]]
+    }
+  }
+}
+round1_raw<- temp_raw
+
+rm(t, temp_raw, name)
+```
+
+Instead of using all the samples, we can use 30 minutes averages:
+
+```{r}
+subsample <- function(data, interval) {
+  temp = split(data, cut(strptime(data$timestamp, format="%F %R"), interval))
+  
+  subsampled = data.frame(timestamp = names(temp))
+  for (name in names(data)) {
+    if (name != 'timestamp') {
+      avgs = sapply(temp, function(x)mean(x[[name]]))
+      subsampled[[name]] = avgs
+    }
+  }
+  subsampled
+}
+
+round1_raw_ss <- subsample(round1_raw, '30 mins')
+round1_raw_ss$timestamp <- as.POSIXct(round1_raw_ss$timestamp)
+round1_ref_ss <- subsample(round1_ref, '30 mins')
+round1_ref_ss$timestamp <- as.POSIXct(round1_ref_ss$timestamp)
+```
+
+Let's put all inside one dataframe:
+
+```{r}
+round1_ss <- round1_raw_ss
+round1_ss$refNO2 = round1_ref_ss$NO2
+
+#let's add the squared of each input
+round1_ss$temperature_sq = round1_ss$temperature ^ 2
+round1_ss$humidity_sq = round1_ss$humidity ^ 2
+round1_ss$custom_MICS_sq = round1_ss$custom_MICS ^ 2
+
+# we can delete the other data
+rm(round1_raw_ss, round1_ref_ss)
+```
+
+Let's do the linear regression using mics, temperature and humidity and their 2nd power too:
+
+```{r}
+round1_model1_thm <- lm(refNO2 ~
+                          custom_MICS + custom_MICS_sq +
+                          custom_MICS * temperature +
+                          custom_MICS * temperature_sq +
+                          custom_MICS * humidity +
+                          custom_MICS * humidity_sq
+                        , data=round1_ss)
+summary(round1_model1_thm)
+
+compared_round1_m1 <- data.frame(timestamp = round1_ss$timestamp, reference = round1_ss$refNO2, fitted = fitted(round1_model1_thm))
+
+print(paste('mean error', mean(compared_round1_m1$reference - compared_round1_m1$fitted), 'ppb'))
+print(paste('mean absolute error', mean(abs(compared_round1_m1$reference - compared_round1_m1$fitted)), 'ppb'))
+```
+
+Which will look like this:
+
+```{r}
+xrange <- range(compared_round1_m1$timestamp)
+yrange <- range(compared_round1_m1$timestamp)
+
+plot(compared_round1_m1$timestamp, compared_round1_m1$reference, type='l', xlab='time', ylab='ppb', col = 'red')
+axis.POSIXct(1, at=seq(xrange[1], xrange[2], by="day"), format="%b %d")
+lines(compared_round1_m1$timestamp, compared_round1_m1$fitted, type='l', lty = 2, col = 'blue')
+legend("topright", legend = c("reference", "fitted"),
+       text.width = strwidth("reference"),
+       col=c('red', 'blue'),
+       lty = 1:2, xjust = 1, yjust = 1)
+
+rm(xrange, yrange)
+```
+
+## Round 2
+
+Now let's basically repeat the same for round 2:
+
+- Started: 10/01/2018
+11:22:39 at mobile phone
+11:23:21 at reference
+0 at sensor
+
+Let's load and parse the data:
+
+```{r}
+round2_raw <- read.csv(file="../../round2/data/AIRSENSE.CSV", header=TRUE, sep=",", stringsAsFactors = FALSE)
+
+start_TS <- as.POSIXct('2018-01-10 11:23:21')
+
+round2_raw$timestamp <- start_TS + floor(round2_raw$timestamp / 1000)
+
+# -1 are actually failures
+round2_raw$humidity <- ifelse(round2_raw$humidity == -1, NA, round2_raw$humidity)
+round2_raw$temperature <- ifelse(round2_raw$temperature == -1, NA, round2_raw$temperature)
+# remove data that was not gathered
+round2_raw <- round2_raw[ , -which(names(round2_raw) %in% c('ratio_NH3','ratio_CO','ratio_NO2', 'nh3', 'co', 'no2', 'c3h8', 'c4h10', 'ch4', 'h2', 'c2h5oh'))]
+
+round2_ref <- read.csv(file="../../round2/data/reference.csv", header=TRUE, sep=",", stringsAsFactors = FALSE)
+round2_ref$timestamp <- as.POSIXct(paste(round2_ref$Date, round2_ref$Time))
+round2_ref <- round2_ref[ , -which(names(round2_ref) %in% c('Date','Time'))]
+names(round2_ref)[names(round2_ref) == "NO2CNC1"] <- "NO2"
+names(round2_ref)[names(round2_ref) == "NOXCNC1"] <- "NOX"
+names(round2_ref)[names(round2_ref) == "NOCNC1"] <- "NO"
+
+rm(start_TS)
+```
+
+Now we need to make the timestamps match
+
+```{r}
+first_useful_ts <- max(round2_raw$timestamp[1], round2_ref$timestamp[1])
+last_useful_ts <- min(round2_raw$timestamp[nrow(round2_raw)], round2_ref$timestamp[nrow(round2_ref)])
+
+round2_raw <- round2_raw[which(round2_raw$timestamp <= last_useful_ts & round2_raw$timestamp >= first_useful_ts ), ]
+round2_ref <- round2_ref[which(round2_ref$timestamp <= last_useful_ts & round2_ref$timestamp >= first_useful_ts ), ]
+
+temp_raw <- data.frame()
+
+for (name in names(round2_raw)) {
+  if (name != 'timestamp') {
+    if (nrow(temp_raw) == 0) {
+      temp_raw = interpolate(round2_raw, round2_ref, name)
+    } else {
+      t = interpolate(round2_raw, round2_ref, name)
+      temp_raw[[name]] = t[[name]]
+    }
+  }
+}
+round2_raw<- temp_raw
+
+rm(t, temp_raw, name)
+```
+
+Use 30 minutes averages:
+
+```{r}
+subsample <- function(data, interval) {
+  temp = split(data, cut(strptime(data$timestamp, format="%F %R"), interval))
+  
+  subsampled = data.frame(timestamp = names(temp))
+  for (name in names(data)) {
+    if (name != 'timestamp') {
+      avgs = sapply(temp, function(x)mean(x[[name]]))
+      subsampled[[name]] = avgs
+    }
+  }
+  subsampled
+}
+
+round2_raw_ss <- subsample(round2_raw, '30 mins')
+round2_raw_ss$timestamp <- as.POSIXct(round2_raw_ss$timestamp)
+round2_ref_ss <- subsample(round2_ref, '30 mins')
+round2_ref_ss$timestamp <- as.POSIXct(round2_ref_ss$timestamp)
+```
+
+Here there are some "holes" in the data that will cause trouble later, we need to get rid of them:
+
+```{r}
+round2_raw_ss = round2_raw_ss[which(!is.na(round2_raw_ss$custom_MICS)), ]
+round2_ref_ss = round2_ref_ss[which(!is.na(round2_raw_ss$custom_MICS)), ]
+round2_raw_ss = round2_raw_ss[which(!is.na(round2_ref_ss$NO2)), ]
+round2_ref_ss = round2_ref_ss[which(!is.na(round2_ref_ss$NO2)), ]
+```
+
+Let's put everything into one data frame:
+
+```{r}
+round2_ss <- round2_raw_ss
+round2_ss$refNO2 = round2_ref_ss$NO2
+
+#let's add the squared of each input
+round2_ss$temperature_sq = round2_ss$temperature ^ 2
+round2_ss$humidity_sq = round2_ss$humidity ^ 2
+round2_ss$custom_MICS_sq = round2_ss$custom_MICS ^ 2
+round2_ss$pressure_sq = round2_ss$pressure ^ 2
+round2_ss$alphadiff_sq = round2_ss$alphadiff ^ 2
+
+# we can delete the other data
+rm(round2_raw_ss, round2_ref_ss)
+```
+
+
+What happens if we use the model from round 1 on the data from round 2?
+
+```{r}
+compared_round2_m1 <- data.frame(timestamp = round2_ss$timestamp, reference = round2_ss$refNO2, fitted = predict(round1_model1_thm, round2_ss))
+
+print(paste('mean error', mean(compared_round2_m1$reference - compared_round2_m1$fitted), 'ppb'))
+print(paste('mean absolute error', mean(abs(compared_round2_m1$reference - compared_round2_m1$fitted)), 'ppb'))
+
+xrange <- range(compared_round2_m1$timestamp)
+yrange <- range(compared_round2_m1$timestamp)
+
+plot(compared_round2_m1$timestamp, compared_round2_m1$reference, type='l', xlab='time', ylab='ppb', col = 'red')
+axis.POSIXct(1, at=seq(xrange[1], xrange[2], by="day"), format="%b %d")
+lines(compared_round2_m1$timestamp, compared_round2_m1$fitted, type='l', lty = 2, col = 'blue')
+legend("topright", legend = c("reference", "fitted_r1"),
+       text.width = strwidth("reference"),
+       col=c('red', 'blue'),
+       lty = 1:2, xjust = 1, yjust = 1)
+
+rm(xrange, yrange)
+
+```
+
+Performances are total crap.
+
+
+Now let's create a model from round 2, we will create one with only temperature, humidity and mics:
+
+```{r}
+round2_model1_thm <- lm(refNO2 ~
+                          custom_MICS + custom_MICS_sq +
+                          custom_MICS * temperature +
+                          custom_MICS * temperature_sq +
+                          custom_MICS * humidity +
+                          custom_MICS * humidity_sq
+                        , data=round2_ss)
+summary(round2_model1_thm)
+
+compared_round2_m1 <- data.frame(timestamp = round2_ss$timestamp, reference = round2_ss$refNO2, fitted = fitted(round2_model1_thm))
+
+print(paste('mean error', mean(compared_round2_m1$reference - compared_round2_m1$fitted), 'ppb'))
+print(paste('mean absolute error', mean(abs(compared_round2_m1$reference - compared_round2_m1$fitted)), 'ppb'))
+
+xrange <- range(compared_round2_m1$timestamp)
+yrange <- range(compared_round2_m1$timestamp)
+
+plot(compared_round2_m1$timestamp, compared_round2_m1$reference, type='l', xlab='time', ylab='ppb', col = 'red')
+axis.POSIXct(1, at=seq(xrange[1], xrange[2], by="day"), format="%b %d")
+lines(compared_round2_m1$timestamp, compared_round2_m1$fitted, type='l', lty = 2, col = 'blue')
+legend("topright", legend = c("reference", "fitted"),
+       text.width = strwidth("reference"),
+       col=c('red', 'blue'),
+       lty = 1:2, xjust = 1, yjust = 1)
+
+rm(xrange, yrange)
+```
+
+It works, but it's not great. Now let's also add pressure and the alphasense sensor diff:
+
+```{r}
+round2_model2_thmpa <- lm(refNO2 ~
+                          custom_MICS + custom_MICS_sq +
+                          custom_MICS * temperature +
+                          custom_MICS * temperature_sq +
+                          custom_MICS * humidity +
+                          custom_MICS * humidity_sq +
+                          custom_MICS * pressure +
+                          custom_MICS * pressure_sq +
+                          custom_MICS * alphadiff +
+                          custom_MICS * alphadiff_sq
+                        , data=round2_ss)
+summary(round2_model2_thmpa)
+
+compared_round2_m2 <- data.frame(timestamp = round2_ss$timestamp, reference = round2_ss$refNO2, fitted = fitted(round2_model2_thmpa))
+
+print(paste('mean error', mean(compared_round2_m2$reference - compared_round2_m2$fitted), 'ppb'))
+print(paste('mean absolute error', mean(abs(compared_round2_m2$reference - compared_round2_m2$fitted)), 'ppb'))
+
+xrange <- range(compared_round2_m2$timestamp)
+yrange <- range(compared_round2_m2$timestamp)
+
+plot(compared_round2_m2$timestamp, compared_round2_m2$reference, type='l', xlab='time', ylab='ppb', col = 'red')
+axis.POSIXct(1, at=seq(xrange[1], xrange[2], by="day"), format="%b %d")
+lines(compared_round2_m2$timestamp, compared_round2_m2$fitted, type='l', lty = 2, col = 'blue')
+legend("topright", legend = c("reference", "fitted"),
+       text.width = strwidth("reference"),
+       col=c('red', 'blue'),
+       lty = 1:2, xjust = 1, yjust = 1)
+
+rm(xrange, yrange)
+```
+
+This looks much, much better.
+Compared to what I did with the JS example, where I used all variables up to the 3rd power, though, this is not that great.
+
+## Round 3
+
+
+cjmcu_red = ADCavg(CJMCU_4541_PINRED);
+  cjmcu_ox = ADCavg(CJMCU_4541_PINOX);
+  
+Here the data sets are a bit different, let's load them:
+
+Started on 2/01/2019 at 13:45:48
+Time at the monitoring station: 13:47:29
+
+```{r}
+round3_raw <- read.csv(file="../data/airsense.csv", header=TRUE, sep=",", stringsAsFactors = FALSE)
+
+round3_raw$timestamp <- as.POSIXct(sub('\\..*', '', round3_raw$timestamp), format='%Y-%m-%dT%H:%M:%S')
+
+# to match time on the station, we need to move all timestamps by a time difference:
+
+td <- difftime(as.POSIXct('2/01/2019 13:45:48', format='%d/%m/%Y %H:%M:%S'), as.POSIXct('2/01/2019 13:47:29', format='%d/%m/%Y %H:%M:%S'), units = c('secs'))
+
+round3_raw$timestamp <- round3_raw$timestamp - td
+
+round2_raw$humidity <- ifelse(round2_raw$humidity == -1, NA, round2_raw$humidity)
+round2_raw$temperature <- ifelse(round2_raw$temperature == -1, NA, round2_raw$temperature)
+```
+
+Reference data is split among different files:
+
+```{r}
+round3_ref = read.table("../data/reference_2019-01-04_2019-01-17.xlsx", header = TRUE)
+```
+
