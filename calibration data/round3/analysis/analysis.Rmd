@@ -119,18 +119,18 @@ Let's do the linear regression using mics, temperature and humidity and their 2n
 I hypothesis that custom_MICS can interact with temperature and humidity but not their powers.
 
 ```{r}
-round1_model1_thm <- lm(refNO2 ~
+round1_model_thm <- lm(refNO2 ~
                           custom_MICS + custom_MICS_sq +
                           temperature_sq + humidity_sq +
                           custom_MICS * temperature +
                           custom_MICS * humidity
                         , data=round1_ss)
-summary(round1_model1_thm)
+summary(round1_model_thm)
 
-compared_round1_m1 <- data.frame(timestamp = round1_ss$timestamp, reference = round1_ss$refNO2, fitted = fitted(round1_model1_thm))
+errs_r1_m_thm_r1 <- data.frame(timestamp = round1_ss$timestamp, reference = round1_ss$refNO2, fitted = fitted(round1_model_thm))
 
-print(paste('mean error', mean(compared_round1_m1$reference - compared_round1_m1$fitted), 'ppb'))
-print(paste('mean absolute error', mean(abs(compared_round1_m1$reference - compared_round1_m1$fitted)), 'ppb'))
+print(paste('mean error', mean(errs_r1_m_thm_r1$reference - errs_r1_m_thm_r1$fitted), 'ppb'))
+print(paste('mean absolute error', mean(abs(errs_r1_m_thm_r1$reference - errs_r1_m_thm_r1$fitted)), 'ppb'))
 ```
 
 From the coefficients, it looks like the temperature has a big effect on the measurement.
@@ -139,12 +139,12 @@ The product of MICS and temp or hum doesn't have a big effect, but let's keep it
 Which will look like this:
 
 ```{r}
-xrange <- range(compared_round1_m1$timestamp)
-yrange <- range(compared_round1_m1$timestamp)
+xrange <- range(errs_r1_m_thm_r1$timestamp)
+yrange <- range(errs_r1_m_thm_r1$timestamp)
 
-plot(compared_round1_m1$timestamp, compared_round1_m1$reference, type='l', xlab='time', ylab='ppb', col = 'red')
+plot(errs_r1_m_thm_r1$timestamp, errs_r1_m_thm_r1$reference, type='l', xlab='time', ylab='ppb', col = 'red')
 axis.POSIXct(1, at=seq(xrange[1], xrange[2], by="day"), format="%b %d")
-lines(compared_round1_m1$timestamp, compared_round1_m1$fitted, type='l', lty = 2, col = 'blue')
+lines(errs_r1_m_thm_r1$timestamp, errs_r1_m_thm_r1$fitted, type='l', lty = 2, col = 'blue')
 legend("topright", legend = c("reference", "fitted"),
        text.width = strwidth("reference"),
        col=c('red', 'blue'),
@@ -265,64 +265,62 @@ rm(round2_raw_ss, round2_ref_ss)
 What happens if we use the model from round 1 on the data from round 2?
 
 ```{r}
-compared_round2_m1 <- data.frame(timestamp = round2_ss$timestamp, reference = round2_ss$refNO2, fitted = predict(round1_model1_thm, round2_ss))
+errs_r1_m_thm_r2 <- data.frame(timestamp = round2_ss$timestamp, reference = round2_ss$refNO2, fitted = predict(round1_model_thm, round2_ss))
 
-print(paste('mean error', mean(compared_round2_m1$reference - compared_round2_m1$fitted), 'ppb'))
-print(paste('mean absolute error', mean(abs(compared_round2_m1$reference - compared_round2_m1$fitted)), 'ppb'))
+print(paste('mean error', mean(errs_r1_m_thm_r2$reference - errs_r1_m_thm_r2$fitted), 'ppb'))
+print(paste('mean absolute error', mean(abs(errs_r1_m_thm_r2$reference - errs_r1_m_thm_r2$fitted)), 'ppb'))
 
-xrange <- range(compared_round2_m1$timestamp)
-yrange <- range(compared_round2_m1$timestamp)
+xrange <- range(errs_r1_m_thm_r2$timestamp)
 
-plot(compared_round2_m1$timestamp, compared_round2_m1$reference, type='l', xlab='time', ylab='ppb', col = 'red')
+plot(errs_r1_m_thm_r2$timestamp, errs_r1_m_thm_r2$reference, type='l', xlab='time', ylab='ppb', col = 'red')
 axis.POSIXct(1, at=seq(xrange[1], xrange[2], by="day"), format="%b %d")
-lines(compared_round2_m1$timestamp, compared_round2_m1$fitted, type='l', lty = 2, col = 'blue')
+lines(errs_r1_m_thm_r2$timestamp, errs_r1_m_thm_r2$fitted, type='l', lty = 2, col = 'blue')
 legend("topright", legend = c("reference", "fitted_r1"),
        text.width = strwidth("reference"),
        col=c('red', 'blue'),
        lty = 1:2, xjust = 1, yjust = 1)
 
-rm(xrange, yrange)
+rm(xrange)
 
 ```
 
 Performances are quite crap.
 
 
-Now let's create a model from round 2, we will create one with only temperature, humidity and MICS:
+Now let's create a model for round 2, we will create one with only temperature, humidity and MICS as done before:
 
 ```{r}
-round2_model1_thm <- lm(refNO2 ~
+round2_model_thm <- lm(refNO2 ~
                           custom_MICS + custom_MICS_sq +
                           temperature_sq + humidity_sq +
                           custom_MICS * temperature +
                           custom_MICS * humidity
                         , data=round2_ss)
-summary(round2_model1_thm)
+summary(round2_model_thm)
 
-compared_round2_m1 <- data.frame(timestamp = round2_ss$timestamp, reference = round2_ss$refNO2, fitted = fitted(round2_model1_thm))
+errs_r2_m_thm_r2 <- data.frame(timestamp = round2_ss$timestamp, reference = round2_ss$refNO2, fitted = fitted(round2_model_thm))
 
-print(paste('mean error', mean(compared_round2_m1$reference - compared_round2_m1$fitted), 'ppb'))
-print(paste('mean absolute error', mean(abs(compared_round2_m1$reference - compared_round2_m1$fitted)), 'ppb'))
+print(paste('mean error', mean(errs_r2_m_thm_r2$reference - errs_r2_m_thm_r2$fitted), 'ppb'))
+print(paste('mean absolute error', mean(abs(errs_r2_m_thm_r2$reference - errs_r2_m_thm_r2$fitted)), 'ppb'))
 
-xrange <- range(compared_round2_m1$timestamp)
-yrange <- range(compared_round2_m1$timestamp)
+xrange <- range(errs_r2_m_thm_r2$timestamp)
 
-plot(compared_round2_m1$timestamp, compared_round2_m1$reference, type='l', xlab='time', ylab='ppb', col = 'red')
+plot(errs_r2_m_thm_r2$timestamp, errs_r2_m_thm_r2$reference, type='l', xlab='time', ylab='ppb', col = 'red')
 axis.POSIXct(1, at=seq(xrange[1], xrange[2], by="day"), format="%b %d")
-lines(compared_round2_m1$timestamp, compared_round2_m1$fitted, type='l', lty = 2, col = 'blue')
+lines(errs_r2_m_thm_r2$timestamp, errs_r2_m_thm_r2$fitted, type='l', lty = 2, col = 'blue')
 legend("topright", legend = c("reference", "fitted"),
        text.width = strwidth("reference"),
        col=c('red', 'blue'),
        lty = 1:2, xjust = 1, yjust = 1)
 
-rm(xrange, yrange)
+rm(xrange)
 ```
 
 It works, but it's not great. Now let's also add pressure and the alphasense sensor diff.
-I hypotehise that the alpha sensor has interaction with temp, hum and pressure as the MICS:
+I hypotehise that the alpha sensor has interaction with temp, hum and pressure like the MICS:
 
 ```{r}
-round2_model2_thmpa <- lm(refNO2 ~
+round2_model_thmpa <- lm(refNO2 ~
                             temperature_sq + humidity_sq + pressure_sq +
                             
                             custom_MICS + custom_MICS_sq +
@@ -335,28 +333,63 @@ round2_model2_thmpa <- lm(refNO2 ~
                             alphadiff * humidity +
                             alphadiff * pressure
                           , data=round2_ss)
-summary(round2_model2_thmpa)
+summary(round2_model_thmpa)
 
-compared_round2_m2 <- data.frame(timestamp = round2_ss$timestamp, reference = round2_ss$refNO2, fitted = fitted(round2_model2_thmpa))
+errs_r2_m_thmpa_r2 <- data.frame(timestamp = round2_ss$timestamp, reference = round2_ss$refNO2, fitted = fitted(round2_model_thmpa))
 
-print(paste('mean error', mean(compared_round2_m2$reference - compared_round2_m2$fitted), 'ppb'))
-print(paste('mean absolute error', mean(abs(compared_round2_m2$reference - compared_round2_m2$fitted)), 'ppb'))
+print(paste('mean error', mean(errs_r2_m_thmpa_r2$reference - errs_r2_m_thmpa_r2$fitted), 'ppb'))
+print(paste('mean absolute error', mean(abs(errs_r2_m_thmpa_r2$reference - errs_r2_m_thmpa_r2$fitted)), 'ppb'))
 
-xrange <- range(compared_round2_m2$timestamp)
-yrange <- range(compared_round2_m2$timestamp)
+xrange <- range(errs_r2_m_thmpa_r2$timestamp)
 
-plot(compared_round2_m2$timestamp, compared_round2_m2$reference, type='l', xlab='time', ylab='ppb', col = 'red')
+plot(errs_r2_m_thmpa_r2$timestamp, errs_r2_m_thmpa_r2$reference, type='l', xlab='time', ylab='ppb', col = 'red')
 axis.POSIXct(1, at=seq(xrange[1], xrange[2], by="day"), format="%b %d")
-lines(compared_round2_m2$timestamp, compared_round2_m2$fitted, type='l', lty = 2, col = 'blue')
+lines(errs_r2_m_thmpa_r2$timestamp, errs_r2_m_thmpa_r2$fitted, type='l', lty = 2, col = 'blue')
 legend("topright", legend = c("reference", "fitted"),
        text.width = strwidth("reference"),
        col=c('red', 'blue'),
        lty = 1:2, xjust = 1, yjust = 1)
 
-rm(xrange, yrange)
+rm(xrange)
 ```
 
 Now, this looks much, much better.
+
+Let's notice one thing: pressure has quite low effect on the sensors, maybe it's worth actually removing it completely:
+
+```{r}
+round2_model_thma <- lm(refNO2 ~
+                            temperature_sq + humidity_sq +
+                            
+                            custom_MICS + custom_MICS_sq +
+                            custom_MICS * temperature +
+                            custom_MICS * humidity +
+
+                            alphadiff + alphadiff_sq +
+                            alphadiff * temperature +
+                            alphadiff * humidity
+                          , data=round2_ss)
+summary(round2_model_thma)
+
+errs_r2_m_thma_r2 <- data.frame(timestamp = round2_ss$timestamp, reference = round2_ss$refNO2, fitted = fitted(round2_model_thma))
+
+print(paste('mean error', mean(errs_r2_m_thma_r2$reference - errs_r2_m_thma_r2$fitted), 'ppb'))
+print(paste('mean absolute error', mean(abs(errs_r2_m_thma_r2$reference - errs_r2_m_thma_r2$fitted)), 'ppb'))
+
+xrange <- range(errs_r2_m_thma_r2$timestamp)
+
+plot(errs_r2_m_thma_r2$timestamp, errs_r2_m_thma_r2$reference, type='l', xlab='time', ylab='ppb', col = 'red')
+axis.POSIXct(1, at=seq(xrange[1], xrange[2], by="day"), format="%b %d")
+lines(errs_r2_m_thma_r2$timestamp, errs_r2_m_thma_r2$fitted, type='l', lty = 2, col = 'blue')
+legend("topright", legend = c("reference", "fitted"),
+       text.width = strwidth("reference"),
+       col=c('red', 'blue'),
+       lty = 1:2, xjust = 1, yjust = 1)
+
+rm(xrange)
+```
+The accuracy is worse, but let's keep this model for comparison.
+
 
 ## Round 3
 
@@ -499,26 +532,25 @@ rm(round3_raw_ss, round3_ref_ss)
 What happens if we use the model from round 1?
 
 ```{r}
-compared_round3_m1 <- data.frame(timestamp = round3_ss$timestamp, reference = round3_ss$refNO2, fitted = predict(round1_model1_thm, round3_ss))
+errs_r1_m_thm_r3 <- data.frame(timestamp = round3_ss$timestamp, reference = round3_ss$refNO2, fitted = predict(round1_model_thm, round3_ss))
 
 # remove absurd spikes:
-compared_round3_m1 <- compared_round3_m1[which(abs(compared_round3_m1$fitted) < 100), ]
+errs_r1_m_thm_r3 <- errs_r1_m_thm_r3[which(abs(errs_r1_m_thm_r3$fitted) < 100), ]
 
-print(paste('mean error', mean(compared_round3_m1$reference - compared_round3_m1$fitted), 'ppb'))
-print(paste('mean absolute error', mean(abs(compared_round3_m1$reference - compared_round3_m1$fitted)), 'ppb'))
+print(paste('mean error', mean(errs_r1_m_thm_r3$reference - errs_r1_m_thm_r3$fitted), 'ppb'))
+print(paste('mean absolute error', mean(abs(errs_r1_m_thm_r3$reference - errs_r1_m_thm_r3$fitted)), 'ppb'))
 
-xrange <- range(compared_round3_m1$timestamp)
-yrange <- range(compared_round3_m1$timestamp)
+xrange <- range(errs_r1_m_thm_r3$timestamp)
 
-plot(compared_round3_m1$timestamp, compared_round3_m1$reference, type='l', xlab='time', ylab='ppb', col = 'red')
+plot(errs_r1_m_thm_r3$timestamp, errs_r1_m_thm_r3$reference, type='l', xlab='time', ylab='ppb', col = 'red')
 axis.POSIXct(1, at=seq(xrange[1], xrange[2], by="day"), format="%b %d")
-lines(compared_round3_m1$timestamp, compared_round3_m1$fitted, type='l', lty = 2, col = 'blue')
+lines(errs_r1_m_thm_r3$timestamp, errs_r1_m_thm_r3$fitted, type='l', lty = 2, col = 'blue')
 legend("topright", legend = c("reference", "fitted_r1"),
        text.width = strwidth("reference"),
        col=c('red', 'blue'),
        lty = 1:2, xjust = 1, yjust = 1)
 
-rm(xrange, yrange)
+rm(xrange)
 
 ```
 
@@ -527,72 +559,80 @@ surprisingly, it doesn't look too bad !
 Let's see if use the first model of round 2:
 
 ```{r}
-compared_round3_m2 <- data.frame(timestamp = round3_ss$timestamp, reference = round3_ss$refNO2, fitted = predict(round2_model1_thm, round3_ss))
+errs_r2_m_thm_r3 <- data.frame(timestamp = round3_ss$timestamp, reference = round3_ss$refNO2, fitted = predict(round2_model_thm, round3_ss))
 
-compared_round3_m2 <- compared_round3_m2[which(abs(compared_round3_m2$fitted) < 100), ]
+errs_r2_m_thm_r3 <- errs_r2_m_thm_r3[which(abs(errs_r2_m_thm_r3$fitted) < 100), ]
 
-print(paste('mean error', mean(compared_round3_m2$reference - compared_round3_m2$fitted), 'ppb'))
-print(paste('mean absolute error', mean(abs(compared_round3_m2$reference - compared_round3_m2$fitted)), 'ppb'))
+print(paste('mean error', mean(errs_r2_m_thm_r3$reference - errs_r2_m_thm_r3$fitted), 'ppb'))
+print(paste('mean absolute error', mean(abs(errs_r2_m_thm_r3$reference - errs_r2_m_thm_r3$fitted)), 'ppb'))
 
-xrange <- range(compared_round3_m2$timestamp)
-yrange <- range(compared_round3_m2$timestamp)
+xrange <- range(errs_r2_m_thm_r3$timestamp)
 
-plot(compared_round3_m2$timestamp, compared_round3_m2$reference, type='l', xlab='time', ylab='ppb', col = 'red')
+plot(errs_r2_m_thm_r3$timestamp, errs_r2_m_thm_r3$reference, type='l', xlab='time', ylab='ppb', col = 'red')
 axis.POSIXct(1, at=seq(xrange[1], xrange[2], by="day"), format="%b %d")
-lines(compared_round3_m2$timestamp, compared_round3_m2$fitted, type='l', lty = 2, col = 'blue')
+lines(errs_r2_m_thm_r3$timestamp, errs_r2_m_thm_r3$fitted, type='l', lty = 2, col = 'blue')
 legend("topright", legend = c("reference", "fitted_r1"),
        text.width = strwidth("reference"),
        col=c('red', 'blue'),
        lty = 1:2, xjust = 1, yjust = 1)
 
-rm(xrange, yrange)
+rm(xrange)
 ```
 
-Looks quite similar, although actually performs worse.
+Looks quite similar to the one from round 1, although actually performs worse.
 
 Now with the second and more precise model:
 
 ```{r}
-compared_round3_m3 <- data.frame(timestamp = round3_ss$timestamp, reference = round3_ss$refNO2, fitted = predict(round2_model2_thmpa, round3_ss))
+errs_r2_m_thmpa_r3 <- data.frame(timestamp = round3_ss$timestamp, reference = round3_ss$refNO2, fitted = predict(round2_model_thmpa, round3_ss))
 
-compared_round3_m3 <- compared_round3_m3[which(abs(compared_round3_m3$fitted) < 100), ]
+print(paste('mean error', mean(errs_r2_m_thmpa_r3$reference - errs_r2_m_thmpa_r3$fitted), 'ppb'))
+print(paste('mean absolute error', mean(abs(errs_r2_m_thmpa_r3$reference - errs_r2_m_thmpa_r3$fitted)), 'ppb'))
 
-
-print(paste('mean error', mean(compared_round3_m3$reference - compared_round3_m3$fitted), 'ppb'))
-print(paste('mean absolute error', mean(abs(compared_round3_m3$reference - compared_round3_m3$fitted)), 'ppb'))
-
-xrange <- range(compared_round3_m3$timestamp)
-yrange <- range(compared_round3_m3$timestamp)
-
-plot(compared_round3_m3$timestamp, compared_round3_m3$reference, type='l', xlab='time', ylab='ppb', col = 'red')
-axis.POSIXct(1, at=seq(xrange[1], xrange[2], by="day"), format="%b %d")
-lines(compared_round3_m3$timestamp, compared_round3_m3$fitted, type='l', lty = 2, col = 'blue')
-legend("topright", legend = c("reference", "fitted_r1"),
-       text.width = strwidth("reference"),
-       col=c('red', 'blue'),
-       lty = 1:2, xjust = 1, yjust = 1)
-
-rm(xrange, yrange)
 ```
 
-This is completely out of range. Maybe the way some of these variable were measured have changed?
+This is completely out of range.
+Why is that? Maybe the way some of these variable were measured have changed?
+
+If we remove the pressure?
+
+```{r}
+errs_r2_m_thma_r3 <- data.frame(timestamp = round3_ss$timestamp, reference = round3_ss$refNO2, fitted = predict(round2_model_thma, round3_ss))
+
+print(paste('mean error', mean(errs_r2_m_thma_r3$reference - errs_r2_m_thma_r3$fitted), 'ppb'))
+print(paste('mean absolute error', mean(abs(errs_r2_m_thma_r3$reference - errs_r2_m_thma_r3$fitted)), 'ppb'))
+```
+OK, that's not gonna work.
 
 
-Let's build the same models for round 3 data, but only using the first week of data:
+Let's build the same models using round 3 data, but only using the first week of data:
 
 ```{r}
 round3_ss_week1 <- round3_ss[which( difftime(round3_ss$timestamp, round3_ss[1, 'timestamp'], units=c('days')) <7 ), ]
 # this actually less than a week!
 
-round3_model1_thm <- lm(refNO2 ~
+round3_model_thm <- lm(refNO2 ~
                           custom_MICS + custom_MICS_sq +
                           temperature_sq + humidity_sq +
                           custom_MICS * temperature +
                           custom_MICS * humidity
                         , data=round3_ss_week1)
-summary(round3_model1_thm)
+summary(round3_model_thm)
 
-round3_model2_thmpa <- lm(refNO2 ~
+round3_model_thma <- lm(refNO2 ~
+                            temperature_sq + humidity_sq +
+                            
+                            custom_MICS + custom_MICS_sq +
+                            custom_MICS * temperature +
+                            custom_MICS * humidity +
+
+                            alphadiff + alphadiff_sq +
+                            alphadiff * temperature +
+                            alphadiff * humidity
+                          , data=round3_ss_week1)
+summary(round3_model_thma)
+
+round3_model_thmpa <- lm(refNO2 ~
                             temperature_sq + humidity_sq + pressure_sq +
                             
                             custom_MICS + custom_MICS_sq +
@@ -605,94 +645,120 @@ round3_model2_thmpa <- lm(refNO2 ~
                             alphadiff * humidity +
                             alphadiff * pressure
                           , data=round3_ss_week1)
-summary(round3_model2_thmpa)
+summary(round3_model_thmpa)
 
-compared_round3_m4 <- data.frame(timestamp = round3_ss$timestamp, reference = round3_ss$refNO2, fitted = predict(round3_model1_thm, round3_ss))
-compared_round3_m4 <- compared_round3_m4[which(abs(compared_round3_m4$fitted) < 100), ]
+errs_r3_m_thm_r3 <- data.frame(timestamp = round3_ss$timestamp, reference = round3_ss$refNO2, fitted = predict(round3_model_thm, round3_ss))
+errs_r3_m_thm_r3 <- errs_r3_m_thm_r3[which(abs(errs_r3_m_thm_r3$fitted) < 100), ]
 
+print(paste('THM mean absolute error', mean(abs(errs_r3_m_thm_r3$reference - errs_r3_m_thm_r3$fitted)), 'ppb'))
 
-xrange <- range(compared_round3_m4$timestamp)
-yrange <- range(compared_round3_m4$timestamp)
+errs_r3_m_thma_r3 <- data.frame(timestamp = round3_ss$timestamp, reference = round3_ss$refNO2, fitted = predict(round3_model_thma, round3_ss))
+errs_r3_m_thma_r3 <- errs_r3_m_thma_r3[which(abs(errs_r3_m_thma_r3$fitted) < 100), ]
 
-plot(compared_round3_m4$timestamp, compared_round3_m4$reference, type='l', xlab='time', ylab='ppb', col = 'red')
+print(paste('THMA mean absolute error', mean(abs(errs_r3_m_thma_r3$reference - errs_r3_m_thma_r3$fitted)), 'ppb'))
+
+errs_r3_m_thmpa_r3 <- data.frame(timestamp = round3_ss$timestamp, reference = round3_ss$refNO2, fitted = predict(round3_model_thmpa, round3_ss))
+errs_r3_m_thmpa_r3 <- errs_r3_m_thmpa_r3[which(abs(errs_r3_m_thmpa_r3$fitted) < 100), ]
+
+print(paste('THMPA mean absolute error', mean(abs(errs_r3_m_thmpa_r3$reference - errs_r3_m_thmpa_r3$fitted)), 'ppb'))
+
+xrange <- range(errs_r3_m_thm_r3$timestamp)
+
+plot(errs_r3_m_thm_r3$timestamp, errs_r3_m_thm_r3$reference, type='l', xlab='time', ylab='ppb', col = 'red')
 axis.POSIXct(1, at=seq(xrange[1], xrange[2], by="day"), format="%b %d")
-lines(compared_round3_m4$timestamp, compared_round3_m4$fitted, type='l', lty = 2, col = 'blue')
-legend("topright", legend = c("reference", "fitted"),
+lines(errs_r3_m_thm_r3$timestamp, errs_r3_m_thm_r3$fitted, type='l', lty = 2, col = 'blue')
+legend("topright", legend = c("reference", "THM"),
        text.width = strwidth("reference"),
        col=c('red', 'blue'),
        lty = 1:2, xjust = 1, yjust = 1)
 
-compared_round3_m5 <- data.frame(timestamp = round3_ss$timestamp, reference = round3_ss$refNO2, fitted = predict(round3_model2_thmpa, round3_ss))
-compared_round3_m5 <- compared_round3_m5[which(abs(compared_round3_m5$fitted) < 100), ]
+xrange <- range(errs_r3_m_thma_r3$timestamp)
 
-
-xrange <- range(compared_round3_m5$timestamp)
-yrange <- range(compared_round3_m5$timestamp)
-
-plot(compared_round3_m5$timestamp, compared_round3_m5$reference, type='l', xlab='time', ylab='ppb', col = 'red')
+plot(errs_r3_m_thma_r3$timestamp, errs_r3_m_thma_r3$reference, type='l', xlab='time', ylab='ppb', col = 'red')
 axis.POSIXct(1, at=seq(xrange[1], xrange[2], by="day"), format="%b %d")
-lines(compared_round3_m5$timestamp, compared_round3_m5$fitted, type='l', lty = 2, col = 'blue')
-legend("topright", legend = c("reference", "fitted"),
+lines(errs_r3_m_thma_r3$timestamp, errs_r3_m_thma_r3$fitted, type='l', lty = 2, col = 'blue')
+legend("topright", legend = c("reference", "THMA"),
        text.width = strwidth("reference"),
        col=c('red', 'blue'),
        lty = 1:2, xjust = 1, yjust = 1)
 
-rm(xrange, yrange)
+xrange <- range(errs_r3_m_thmpa_r3$timestamp)
+
+plot(errs_r3_m_thmpa_r3$timestamp, errs_r3_m_thmpa_r3$reference, type='l', xlab='time', ylab='ppb', col = 'red')
+axis.POSIXct(1, at=seq(xrange[1], xrange[2], by="day"), format="%b %d")
+lines(errs_r3_m_thmpa_r3$timestamp, errs_r3_m_thmpa_r3$fitted, type='l', lty = 2, col = 'blue')
+legend("topright", legend = c("reference", "THMPA"),
+       text.width = strwidth("reference"),
+       col=c('red', 'blue'),
+       lty = 1:2, xjust = 1, yjust = 1)
+
+rm(xrange)
 ```
 
-What's interesting in these charts is that it clearly shows the overfitting in the first week
-The first week looks quite OK, but then the others don't.
-Especially the second model, the one that uses the alpha diff and pressure doesn't look right at all!
+What's interesting in these charts is that it clearly shows the overfitting in the first week.
+The THM does quite OK, but the overall accuracy is not great, the THMA seems better at picking spikes and doesn't degrade too much over time, but has lower overall accuracy than THM alone, the THMPA does very well in the first week, but then it looses accuracy.
 
 
 
 Let's add also the new sensor, the CJMCU 4541.
+First of all, are the MICS and the CJMCU different? Let's find it out:
+
+```{r}
+xrange <- range(round3_raw$timestamp)
+
+plot(round3_raw$timestamp, round3_raw$custom_MICS, type='l', xlab='time', col = 'red')
+axis.POSIXct(1, at=seq(xrange[1], xrange[2], by="day"), format="%b %d")
+lines(round3_raw$timestamp, round3_raw$cjmcu_ox, type='l', lty = 2, col = 'blue')
+legend("topright", legend = c("MICS", "CJMCU"),
+       text.width = strwidth("CJMCU"),
+       col=c('red', 'blue'),
+       lty = 1:2, xjust = 1, yjust = 1)
+```
+They look almost identical except from a scaling factor. So we should expect almost identical results if we use the MICS or the CJMCU.
+
 We train the model on the first week of the dataset only as before. We treat the cjmcu variables as the custom_MICS, this will generate many more variables!
 
 ```{r}
 round3_ss$cjmcu_red_sq = round3_ss$cjmcu_red ^ 2
 round3_ss$cjmcu_ox_sq = round3_ss$cjmcu_ox ^ 2
 
-round3_model3_thmpac <- lm(refNO2 ~
-                             temperature_sq + humidity_sq + pressure_sq +
+round3_model3_thmac <- lm(refNO2 ~
+                             temperature_sq + humidity_sq +
                              
                              custom_MICS + custom_MICS_sq +
                              custom_MICS * temperature +
                              custom_MICS * humidity +
-                             custom_MICS * pressure +
-                             
+
                              alphadiff + alphadiff_sq +
                              alphadiff * temperature +
                              alphadiff * humidity +
-                             alphadiff * pressure +
-                             
+
                              cjmcu_red + cjmcu_red_sq +
                              cjmcu_red * temperature +
                              cjmcu_red * humidity +
-                             cjmcu_red * pressure +
-                             
+
                              cjmcu_ox + cjmcu_ox_sq +
                              cjmcu_ox * temperature +
-                             cjmcu_ox * humidity +
-                             cjmcu_ox * pressure
+                             cjmcu_ox * humidity
                            , data=round3_ss_week1)
-summary(round3_model3_thmpac)
+summary(round3_model3_thmac)
 
-compared_round3_m5 <- data.frame(timestamp = round3_ss$timestamp, reference = round3_ss$refNO2, fitted = predict(round3_model3_thmpac, round3_ss))
-compared_round3_m5 <- compared_round3_m5[which(abs(compared_round3_m5$fitted) < 100), ]
+errs_r3_m_thmac_r3 <- data.frame(timestamp = round3_ss$timestamp, reference = round3_ss$refNO2, fitted = predict(round3_model3_thmac, round3_ss))
+errs_r3_m_thmac_r3 <- errs_r3_m_thmac_r3[which(abs(errs_r3_m_thmac_r3$fitted) < 100), ]
 
-xrange <- range(compared_round3_m5$timestamp)
-yrange <- range(compared_round3_m5$timestamp)
+print(paste('THMAC mean absolute error', mean(abs(errs_r3_m_thmpa_r3$reference - errs_r3_m_thmpa_r3$fitted)), 'ppb'))
 
-plot(compared_round3_m5$timestamp, compared_round3_m5$reference, type='l', xlab='time', ylab='ppb', col = 'red')
+xrange <- range(errs_r3_m_thmac_r3$timestamp)
+
+plot(errs_r3_m_thmac_r3$timestamp, errs_r3_m_thmac_r3$reference, type='l', xlab='time', ylab='ppb', col = 'red')
 axis.POSIXct(1, at=seq(xrange[1], xrange[2], by="day"), format="%b %d")
-lines(compared_round3_m5$timestamp, compared_round3_m5$fitted, type='l', lty = 2, col = 'blue')
-legend("topright", legend = c("reference", "fitted"),
+lines(errs_r3_m_thmac_r3$timestamp, errs_r3_m_thmac_r3$fitted, type='l', lty = 2, col = 'blue')
+legend("topright", legend = c("reference", "THMAC"),
        text.width = strwidth("reference"),
        col=c('red', 'blue'),
        lty = 1:2, xjust = 1, yjust = 1)
 
-rm(xrange, yrange)
+rm(xrange)
 ```
 
 Again, even more overfitted.
@@ -700,29 +766,31 @@ Again, even more overfitted.
 OK, let's focus on alphasense only, is that the messes it up?
 
 ```{r}
-round3_model6_tha <- lm(refNO2 ~
+round3_model_tha <- lm(refNO2 ~
                           temperature + humidity +
+                          temperature_sq + humidity_sq +
                           alphadiff + alphadiff_sq +
                           alphadiff * temperature +
                           alphadiff * humidity
                         , data=round3_ss_week1)
-summary(round3_model6_tha)
+summary(round3_model_tha)
 
-compared_round3_m6 <- data.frame(timestamp = round3_ss$timestamp, reference = round3_ss$refNO2, fitted = predict(round3_model6_tha, round3_ss))
-compared_round3_m6 <- compared_round3_m6[which(abs(compared_round3_m6$fitted) < 100), ]
+errs_r3_m_tha_r3 <- data.frame(timestamp = round3_ss$timestamp, reference = round3_ss$refNO2, fitted = predict(round3_model_tha, round3_ss))
+errs_r3_m_tha_r3 <- errs_r3_m_tha_r3[which(abs(errs_r3_m_tha_r3$fitted) < 100), ]
 
-xrange <- range(compared_round3_m6$timestamp)
-yrange <- range(compared_round3_m6$timestamp)
+print(paste('THA mean absolute error', mean(abs(errs_r3_m_tha_r3$reference - errs_r3_m_tha_r3$fitted)), 'ppb'))
 
-plot(compared_round3_m6$timestamp, compared_round3_m6$reference, type='l', xlab='time', ylab='ppb', col = 'red')
+xrange <- range(errs_r3_m_tha_r3$timestamp)
+
+plot(errs_r3_m_tha_r3$timestamp, errs_r3_m_tha_r3$reference, type='l', xlab='time', ylab='ppb', col = 'red')
 axis.POSIXct(1, at=seq(xrange[1], xrange[2], by="day"), format="%b %d")
-lines(compared_round3_m6$timestamp, compared_round3_m6$fitted, type='l', lty = 2, col = 'blue')
+lines(errs_r3_m_tha_r3$timestamp, errs_r3_m_tha_r3$fitted, type='l', lty = 2, col = 'blue')
 legend("topright", legend = c("reference", "fitted"),
        text.width = strwidth("reference"),
        col=c('red', 'blue'),
        lty = 1:2, xjust = 1, yjust = 1)
 
-rm(xrange, yrange)
+rm(xrange)
 ```
 
 Looks like the overall performances are worse than just the MICS and the drift is actually high.
@@ -731,84 +799,138 @@ What if we remove alphasense then? Can we trust only the CJMCU 4541 ? In princip
 We can also try with only the NOX channel!
 
 ```{r}
-round3_model7_thpc <- lm(refNO2 ~
-                             temperature_sq + humidity_sq + pressure_sq +
+round3_model_thc <- lm(refNO2 ~
+                             temperature_sq + humidity_sq +
                              
                              cjmcu_red + cjmcu_red_sq +
                              cjmcu_red * temperature +
                              cjmcu_red * humidity +
-                             cjmcu_red * pressure +
-                             
+
                              cjmcu_ox + cjmcu_ox_sq +
                              cjmcu_ox * temperature +
                              cjmcu_ox * humidity +
-                             cjmcu_ox * pressure +
-                         
-                            cjmcu_red * cjmcu_ox
+
+                             cjmcu_red * cjmcu_ox
                            , data=round3_ss_week1)
-summary(round3_model7_thpc)
+summary(round3_model_thc)
 
-compared_round3_m6 <- data.frame(timestamp = round3_ss$timestamp, reference = round3_ss$refNO2, fitted = predict(round3_model7_thpc, round3_ss))
-compared_round3_m7 <- compared_round3_m7[which(abs(compared_round3_m7$fitted) < 100), ]
+errs_r3_m_thc_r3 <- data.frame(timestamp = round3_ss$timestamp, reference = round3_ss$refNO2, fitted = predict(round3_model_thc, round3_ss))
+errs_r3_m_thc_r3 <- errs_r3_m_thc_r3[which(abs(errs_r3_m_thc_r3$fitted) < 100), ]
 
-round3_model8_thpc <- lm(refNO2 ~
-                             temperature_sq + humidity_sq + pressure_sq +
+print(paste('TCH with RED mean absolute error', mean(abs(errs_r3_m_thc_r3$reference - errs_r3_m_thc_r3$fitted)), 'ppb'))
+
+
+round3_model_thc2 <- lm(refNO2 ~
+                             temperature_sq + humidity_sq +
                              
                              cjmcu_ox + cjmcu_ox_sq +
                              cjmcu_ox * temperature +
-                             cjmcu_ox * humidity +
-                             cjmcu_ox * pressure
+                             cjmcu_ox * humidity
                            , data=round3_ss_week1)
-summary(round3_model8_thpc)
-compared_round3_m8 <- data.frame(timestamp = round3_ss$timestamp, reference = round3_ss$refNO2, fitted = predict(round3_model8_thpc, round3_ss))
-compared_round3_m8 <- compared_round3_m8[which(abs(compared_round3_m8$fitted) < 100), ]
+summary(round3_model_thc2)
+errs_r3_m_thc2_r3 <- data.frame(timestamp = round3_ss$timestamp, reference = round3_ss$refNO2, fitted = predict(round3_model_thc2, round3_ss))
+errs_r3_m_thc2_r3 <- errs_r3_m_thc2_r3[which(abs(errs_r3_m_thc2_r3$fitted) < 100), ]
 
-xrange <- range(compared_round3_m7$timestamp)
-yrange <- range(compared_round3_m7$timestamp)
+print(paste('THC NO RED mean absolute error', mean(abs(errs_r3_m_thc2_r3$reference - errs_r3_m_thc2_r3$fitted)), 'ppb'))
 
-plot(compared_round3_m7$timestamp, compared_round3_m7$reference, type='l', xlab='time', ylab='ppb', col = 'red')
+xrange <- range(errs_r3_m_thc_r3$timestamp)
+
+plot(errs_r3_m_thc_r3$timestamp, errs_r3_m_thc_r3$reference, type='l', xlab='time', ylab='ppb', col = 'red')
 axis.POSIXct(1, at=seq(xrange[1], xrange[2], by="day"), format="%b %d")
-lines(compared_round3_m7$timestamp, compared_round3_m7$fitted, type='l', lty = 2, col = 'blue')
-legend("topright", legend = c("reference", "fitted"),
+lines(errs_r3_m_thc_r3$timestamp, errs_r3_m_thc_r3$fitted, type='l', lty = 2, col = 'blue')
+legend("topright", legend = c("reference", "THC"),
        text.width = strwidth("reference"),
        col=c('red', 'blue'),
        lty = 1:2, xjust = 1, yjust = 1)
 
-xrange <- range(compared_round3_m8$timestamp)
-yrange <- range(compared_round3_m8$timestamp)
+xrange <- range(errs_r3_m_thc2_r3$timestamp)
 
-plot(compared_round3_m8$timestamp, compared_round3_m8$reference, type='l', xlab='time', ylab='ppb', col = 'red')
+plot(errs_r3_m_thc2_r3$timestamp, errs_r3_m_thc2_r3$reference, type='l', xlab='time', ylab='ppb', col = 'red')
 axis.POSIXct(1, at=seq(xrange[1], xrange[2], by="day"), format="%b %d")
-lines(compared_round3_m8$timestamp, compared_round3_m8$fitted, type='l', lty = 2, col = 'blue')
-legend("topright", legend = c("reference", "fitted"),
+lines(errs_r3_m_thc2_r3$timestamp, errs_r3_m_thc2_r3$fitted, type='l', lty = 2, col = 'blue')
+legend("topright", legend = c("reference", "THC1"),
        text.width = strwidth("reference"),
        col=c('red', 'blue'),
        lty = 1:2, xjust = 1, yjust = 1)
-rm(xrange, yrange)
+rm(xrange)
 ```
 
-Overfitted, no matter how you look at it.
+So the one that includes the RED channel is overfitted, but the one with only the NOX channel does fine, like if we used only the custom_MICS.
+
+So if we add also the Alphasense?
+
+```{r}
+round3_model_thac2 <- lm(refNO2 ~
+                          temperature_sq + humidity_sq +
+                          
+                          alphadiff + alphadiff_sq +
+                          alphadiff * temperature +
+                          alphadiff * humidity +
+                          
+                          cjmcu_ox + cjmcu_ox_sq +
+                          cjmcu_ox * temperature +
+                          cjmcu_ox * humidity
+                        , data=round3_ss_week1)
+summary(round3_model_thac2)
+errs_r3_m_thac2_r3 <- data.frame(timestamp = round3_ss$timestamp, reference = round3_ss$refNO2, fitted = predict(round3_model_thac2, round3_ss))
+errs_r3_m_thac2_r3 <- errs_r3_m_thac2_r3[which(abs(errs_r3_m_thac2_r3$fitted) < 100), ]
+
+print(paste('THAC NO RED mean absolute error', mean(abs(errs_r3_m_thc_r3$reference - errs_r3_m_thc_r3$fitted)), 'ppb'))
+
+xrange <- range(errs_r3_m_thac2_r3$timestamp)
+
+plot(errs_r3_m_thac2_r3$timestamp, errs_r3_m_thac2_r3$reference, type='l', xlab='time', ylab='ppb', col = 'red')
+axis.POSIXct(1, at=seq(xrange[1], xrange[2], by="day"), format="%b %d")
+lines(errs_r3_m_thac2_r3$timestamp, errs_r3_m_thac2_r3$fitted, type='l', lty = 2, col = 'blue')
+legend("topright", legend = c("reference", "THC"),
+       text.width = strwidth("reference"),
+       col=c('red', 'blue'),
+       lty = 1:2, xjust = 1, yjust = 1)
+```
+
+
+The results are worse than with the CJMCU alone.
 
 ## Conclusions
 
-If we include all sorts of sensors the fitting with the data can increase substamtially, but it will be overfitted.
-The good old MICS 2714 seems to be working better than the new 4541.
+If we include all sorts of sensors the fitting with the data can increase substantially, but it will be overfitted.
+The good old MICS 2714 seems to be working consistently well or bad depending on hwo you see it.
 
 If we plot the error over time, to understand drift, using the model from the first round:
 
 ```{r}
-compared_round1_m1_all <- compared_round1_m1
-compared_round1_m1_all <- rbind(compared_round1_m1_all, compared_round2_m1)
-compared_round1_m1_all <- rbind(compared_round1_m1_all, compared_round3_m1)
+errs_r1_thm_all <- errs_r1_m_thm_r1
+errs_r1_thm_all <- rbind(errs_r1_thm_all, errs_r1_m_thm_r2)
+errs_r1_thm_all <- rbind(errs_r1_thm_all, errs_r1_m_thm_r3)
 
-compared_round1_m1_all$abserror <- abs(compared_round1_m1_all$reference - compared_round1_m1_all$fitted)
+errs_r1_thm_all$abserror <- abs(errs_r1_thm_all$reference - errs_r1_thm_all$fitted)
 
-compared_round1_m1_all$weeks <- floor(difftime(compared_round1_m1_all$timestamp, compared_round1_m1_all[1, 'timestamp'], units=c('week')))
+errs_r1_thm_all$weeks <- floor(difftime(errs_r1_thm_all$timestamp, errs_r1_thm_all[1, 'timestamp'], units=c('week')))
 
-boxplot(abserror~weeks, data=compared_round1_m1_all, main="Drift of Mics 2714 + temp + hum", 
+boxplot(abserror~weeks, data=errs_r1_thm_all, main="Drift of Mics 2714 + temp + hum", 
    xlab="Weeks from calibration", ylab="Error (ppb)")
 ```
 
-There seems to be some sort of drift, because the error seems to become more spread in the weeks 85 to 92 compared to week 34, but, because there no other weeks to check in between, it's hard to say.
+There seems to be some sort of drift, because the error seems to become more spread in the weeks 85 to 92 compared to week 34, but, because there are no other weeks to check in between, it's hard to say.
+
+Let's compare the solution with Mics and Alphasense:
+
+```{r}
+errs_r3_m_thma_r3$abserror <- abs(errs_r3_m_thma_r3$reference - errs_r3_m_thma_r3$fitted)
+
+errs_r3_m_thma_r3$weeks <- floor(difftime(errs_r3_m_thma_r3$timestamp, errs_r3_m_thma_r3[1, 'timestamp'], units=c('week')))
+
+boxplot(abserror~weeks, data=errs_r3_m_thma_r3, main="Drift of Mics 2714 + temp + hum + Alphasense", 
+   xlab="Weeks from calibration", ylab="Error (ppb)")
+```
+
+The situation is similar, with overall higher errors though especially considering that the model is much more close in time than the one shown above.
+
+
+Other conclusions we can derive are:
+
+- pressure doesn't add anything useful and should probably be excluded
+- the RED channel of the CJMCU should be ignored
+- the Alphasense sensor can lead to excellent results when overfitting, but otherwise doesn't seem to add any useful information
 
 
