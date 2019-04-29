@@ -1,0 +1,204 @@
+---
+title: "Analysis 2"
+output: html_notebook
+---
+
+Here I will focus on the model that involves the custom MICS only.
+This notebook uses the inputs generated on the analysis notebook.
+
+## What is the best combination of T, H and C ?
+
+Let's try out a bunch of scenarios.
+As benchmarker, I will use the average absolute error and the RMSE and plot it over each week of data that we have.
+
+```{r}
+rmse = function(m, o){
+  sqrt(mean((m - o)^2))
+}
+
+benchmarkAll <- function(model) {
+  errs <- data.frame(timestamp = round1$timestamp, reference = round1$refNO2, fitted = predict(model, round1))
+  errs <- rbind(errs, data.frame(timestamp = round2$timestamp, reference = round2$refNO2, fitted = predict(model, round2)))
+  errs <- rbind(errs, data.frame(timestamp = round3$timestamp, reference = round3$refNO2, fitted = predict(model, round3)))
+  
+  errs <- errs[which(abs(errs$fitted) < 100), ]
+  
+  errs$week <- floor(difftime(errs$timestamp, errs[1, 'timestamp'], units=c('week')))
+  
+  weeks <- c()
+  meanerrs <- c()
+  rmses <- c()
+  
+  for(week_ in unique(errs$week)) {
+    weeks <- append(weeks, week_)
+    meanerr_ <- mean(abs(errs[errs$week == week_, 'reference'] - errs[errs$week == week_, 'fitted']))
+    meanerrs <- append(meanerrs, meanerr_)
+    rmse_ <- rmse(errs[errs$week == week_, 'reference'], errs[errs$week == week_, 'fitted'])
+    rmses <- append(rmses, rmse_)
+  }
+  
+  print(paste('Average error', mean(meanerrs)))
+  print(paste('Average rmse', mean(rmses)))
+  
+  plot(weeks, meanerrs, type="l", col="red3", ylab='err', ylim=c(min(meanerrs, rmses), max(meanerrs, rmses)))
+  points(weeks, rmses, col="black")
+  legend("topleft",
+       legend=c('mean err', "rmse"),
+       lty=c(1,0), pch=c(NA, 16), col=c("red3", "black"))
+}
+```
+
+
+Model 1: custom_MICS * temperature + custom_MICS * humidity
+
+```{r}
+model <- lm(refNO2 ~
+              custom_MICS * temperature +
+              custom_MICS * humidity
+            , data=round1)
+summary(model)
+
+benchmarkAll(model)
+```
+
+
+Model 2: custom_MICS_sq + custom_MICS * temperature + custom_MICS * temperature_sq + custom_MICS * humidity + custom_MICS * humidity_sq
+
+```{r}
+model <- lm(refNO2 ~
+              custom_MICS_sq + 
+              custom_MICS * temperature +
+              custom_MICS * temperature_sq +
+              custom_MICS * humidity +
+              custom_MICS * humidity_sq
+            , data=round1)
+summary(model)
+
+benchmarkAll(model)
+```
+
+Model 3: custom_MICS + temperature + humidity
+
+```{r}
+model <- lm(refNO2 ~
+              custom_MICS + temperature + humidity
+            , data=round1)
+summary(model)
+
+benchmarkAll(model)
+```
+
+Model 4: custom_MICS + custom_MICSxT + custom_MICSxH
+
+```{r}
+model <- lm(refNO2 ~
+              custom_MICS + custom_MICSxT + custom_MICSxH
+            , data=round1)
+summary(model)
+
+benchmarkAll(model)
+```
+This last one is quite interesting.
+Temperature and humdity, in principle, shouldn't have direct effect over NO2.
+But this is a little bit worse than the results with temperature and humidity as a direct input.
+
+
+Model 5: custom_MICS + custom_MICS_sq + custom_MICSxT + custom_MICSxH
+
+```{r}
+model <- lm(refNO2 ~
+              custom_MICS + custom_MICS_sq + custom_MICSxT + custom_MICSxH
+            , data=round1)
+summary(model)
+
+benchmarkAll(model)
+```
+
+This is actually the best for now.
+
+Model 6: custom_MICS_sq + custom_MICS * temperature + custom_MICS * humidity
+
+```{r}
+model <- lm(refNO2 ~
+              custom_MICS_sq + custom_MICS * temperature + custom_MICS * humidity
+            , data=round1)
+summary(model)
+
+benchmarkAll(model)
+```
+
+Not better.
+
+
+Let's see if things get better if we consider powers of the multiplications:
+
+```{r}
+round1$custom_MICSxT_sq <- round1$custom_MICSxT ^ 2
+round1$custom_MICSxH_sq <- round1$custom_MICSxH ^ 2
+round2$custom_MICSxT_sq <- round2$custom_MICSxT ^ 2
+round2$custom_MICSxH_sq <- round2$custom_MICSxH ^ 2
+round3$custom_MICSxT_sq <- round3$custom_MICSxT ^ 2
+round3$custom_MICSxH_sq <- round3$custom_MICSxH ^ 2
+```
+
+
+Model 7: custom_MICS + custom_MICS_sq + custom_MICSxT + custom_MICSxT_sq + custom_MICSxH + custom_MICSxH_sq
+
+```{r}
+model <- lm(refNO2 ~
+              custom_MICS + custom_MICS_sq +
+              custom_MICSxT + custom_MICSxT_sq +
+              custom_MICSxH + custom_MICSxH_sq
+            , data=round1)
+summary(model)
+
+benchmarkAll(model)
+```
+
+It doesn't get any better.
+
+
+Model 8: custom_MICS + custom_MICS_sq + custom_MICS_cu + custom_MICSxT + custom_MICSxH
+
+```{r}
+model <- lm(refNO2 ~
+              custom_MICS + custom_MICS_sq + custom_MICS_cu +
+              custom_MICSxT +
+              custom_MICSxH
+            , data=round1)
+summary(model)
+
+benchmarkAll(model)
+```
+
+The cubic power of custom_MICS doesn't do anything.
+
+
+## And the winner is...
+
+I think the winner is:
+
+custom_MICS + custom_MICS_sq + custom_MICSxT + custom_MICSxH
+
+It also makes sense.
+It means that NO2 depends on custom MICS, its second power and its multiplication by temperature and humidity.
+Maybe there are some complex interactions between mics, temperature and humidity, but those are hard to capture with a simple instrument like this.
+
+
+## What is the best sampling frequency?
+
+This is a bit trickier because we will have to resample all the signals and compute the benchmarks again.
+
+We'll fix the model to the winner chosen before.
+
+```{r}
+
+'30 mins'
+
+
+
+
+```
+
+
+
